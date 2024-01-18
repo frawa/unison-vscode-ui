@@ -148,7 +148,10 @@ export const createExtensionMachine = ({
 							const apiClient = createApiProjectsClient(url);
 							return apiClient.projects()
 								.then(projects => {
-									return vscode.window.showQuickPick(projects, { title: "Pick project" });
+									return vscode.window.showQuickPick(projects, {
+										title: "Pick project",
+										placeHolder: "Choose project, or cancel for current project and branch in UCM."
+									});
 								}).then(project => {
 									if (project) {
 										return apiClient.branches(project).then(branches => [project, branches]);
@@ -156,8 +159,16 @@ export const createExtensionMachine = ({
 								}).then(v => {
 									const [project, branches] = v ?? [];
 									if (branches) {
-										return vscode.window.showQuickPick(branches as string[], { title: "Pick branch" }).then(branch => [project, branch]);
+										return vscode.window.showQuickPick(branches as string[], {
+											title: "Pick branch",
+											placeHolder: "Choose branch, or cancel for current project and branch in UCM."
+										}).then(branch => [project, branch]);
 									}
+								}).then(v => {
+									if (!v) {
+										return apiClient.ucmCurrent();
+									}
+									return v;
 								}).then(v => {
 									const [project, branch] = v ?? [];
 									if (branch) {

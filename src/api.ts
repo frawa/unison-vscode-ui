@@ -148,6 +148,12 @@ export function createApiProjectsClient(apiRoot: string): ApiProjectsClient {
 			const res = await fetch(url);
 			return unwrapResult(BranchNames.decode(await res.json())).map(v => v.branchName);
 		},
+		ucmCurrent: async () => {
+			const url = new URL(`${apiRoot}/ucm/current`);
+			const res = await fetch(url);
+			const v = unwrapResult(UcmCurrent.decode(await res.json()));
+			return [v.project, v.branch]
+		},
 	};
 }
 
@@ -156,6 +162,7 @@ export interface ApiProjectsClient {
 	branches: (
 		project: string
 	) => Promise<readonly string[]>;
+	ucmCurrent: () => Promise<[string, string]>;
 }
 
 const ProjectName = t.type(
@@ -179,3 +186,12 @@ export type TBranchName = t.TypeOf<typeof BranchName>;
 
 const BranchNames = t.array(BranchName);
 export type TBranchNames = t.TypeOf<typeof BranchNames>;
+
+const UcmCurrent = t.type(
+	{
+		project: t.string,
+		branch: t.string,
+	},
+	"UcmCurrent"
+);
+export type TUcmCurrent = t.TypeOf<typeof UcmCurrent>;
