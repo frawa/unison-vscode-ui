@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { Actor, assign, createMachine } from "xstate";
-import { createApiClient } from "../api";
+import { createApiClient, createApiProjectsClient } from "../api";
 import { CodebaseProvider } from "../tree-view";
 
 export interface Context {
@@ -12,18 +12,18 @@ export interface Context {
 
 export type ExtensionEvent =
 	| {
-			type: "READY";
-			baseUrl: string;
-	  }
+		type: "READY";
+		baseUrl: string;
+	}
 	| {
-			type: "REFRESH";
-	  }
+		type: "REFRESH";
+	}
 	| {
-			type: "ACTIVATE";
-	  }
+		type: "ACTIVATE";
+	}
 	| {
-			type: "CONFIGURE";
-	  };
+		type: "CONFIGURE";
+	};
 
 interface MachineDependencies {
 	workspaceConfig: vscode.WorkspaceConfiguration;
@@ -142,9 +142,30 @@ export const createExtensionMachine = ({
 				}),
 				getBaseUrlFromUser: async () => {
 					const unisonUrl = await vscode.window.showInputBox({
-						title: "Enter UCM URL",
+						title: "Enter UCM API URL",
+					}).then(url => {
+						if (url) {
+							const apiClient = createApiProjectsClient(url);
+							return apiClient.projects()
+								.then(projects => {
+									return vscode.window.showQuickPick(projects, { title: "Pick project" });
+								}).then(project => {
+									if (project) {
+										return apiClient.branches(project).then(branches => [project, branches]);
+									}
+								}).then(v => {
+									const [project, branches] = v ?? [];
+									if (branches) {
+										return vscode.window.showQuickPick(branches as string[], { title: "Pick branch" }).then(branch => [project, branch]);
+									}
+								}).then(v => {
+									const [project, branch] = v ?? [];
+									if (branch) {
+										return `${url}/projects/${project}/branches/${branch}`;
+									}
+								});
+						}
 					});
-
 					if (unisonUrl === undefined) {
 						vscode.window.showErrorMessage("Please enter a UCM URL.");
 						return { baseUrl: undefined };

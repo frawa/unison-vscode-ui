@@ -135,3 +135,47 @@ export function createApiClient(apiRoot: string): ApiClient {
 		},
 	};
 }
+
+export function createApiProjectsClient(apiRoot: string): ApiProjectsClient {
+	return {
+		projects: async () => {
+			const url = new URL(`${apiRoot}/projects`);
+			const res = await fetch(url);
+			return unwrapResult(ProjectNames.decode(await res.json())).map(v => v.projectName);
+		},
+		branches: async (project) => {
+			const url = new URL(`${apiRoot}/projects/${project}/branches`);
+			const res = await fetch(url);
+			return unwrapResult(BranchNames.decode(await res.json())).map(v => v.branchName);
+		},
+	};
+}
+
+export interface ApiProjectsClient {
+	projects: () => Promise<readonly string[]>;
+	branches: (
+		project: string
+	) => Promise<readonly string[]>;
+}
+
+const ProjectName = t.type(
+	{
+		projectName: t.string,
+	},
+	"ProjectName"
+);
+export type TProjectName = t.TypeOf<typeof ProjectName>;
+
+const ProjectNames = t.array(ProjectName);
+export type TProjectNames = t.TypeOf<typeof ProjectNames>;
+
+const BranchName = t.type(
+	{
+		branchName: t.string,
+	},
+	"BranchName"
+);
+export type TBranchName = t.TypeOf<typeof BranchName>;
+
+const BranchNames = t.array(BranchName);
+export type TBranchNames = t.TypeOf<typeof BranchNames>;
